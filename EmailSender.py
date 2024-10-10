@@ -13,23 +13,25 @@ class EmailSender:
     def __init__(self, 
                  sender_email,
                  password, 
-                 cc_emails=[],
-                 suffix_content="", 
-                 suffix_addresses=['ACS_icon.png', 'tele_icon.png', 'mail_icon.png', 'link_icon.png', 'location_icon.png'], 
+                 cc_emails=None,
+                 suffix_content=None, 
+                 suffix_addresses=None, 
                  template_title=None, 
                  template_content=None, 
-                 set_match_dict={}, 
-                 smtp_server="mail.acsunshine.com", 
-                 smtp_port=465,
-                 encoding='utf-8'):
+                 set_match_dict=None, 
+                 smtp_server=None, 
+                 smtp_port=None,
+                 encoding=None):
         self.sender_email = sender_email
         self.password = password
-        self.smtp_server = smtp_server
-        self.smtp_port = smtp_port
-        self.suffix_content = suffix_content
-        self.suffix_addresses = suffix_addresses
-        self.encoding = encoding
-        self.cc_emails = cc_emails
+
+        self.smtp_server = smtp_server if smtp_server is not None else "mail.acsunshine.com"
+        self.smtp_port = smtp_port if smtp_port is not None else 465
+        self.suffix_content = suffix_content if suffix_content is not None else ""
+        self.suffix_addresses = suffix_addresses if suffix_addresses is not None else ['ACS_icon.png', 'tele_icon.png', 'mail_icon.png', 'link_icon.png', 'location_icon.png']
+        self.encoding = encoding if encoding is not None else 'utf-8'
+        self.cc_emails = cc_emails if cc_emails is not None else []
+        self.set_match_dict = set_match_dict if set_match_dict is not None else {}
 
 #        if not(template_title is None) and os.path.isfile(template_title):
 #            with open(template_title, 'r') as file:
@@ -45,14 +47,14 @@ class EmailSender:
     
         self.template_title = self.set_template_title(template_title)
         self.template_content = self.set_template_content(template_content)
-        self.set_match_dict = set_match_dict
+
     
     def set_template_title(self, template_title):
         if not(template_title is None) and os.path.isfile(template_title):
             with open(template_title, 'r', encoding=self.encoding) as file:
                 self.template_title = file.read()
         else:
-            self.template_title = template_title
+            self.template_title = str(template_title)
         return "Template Title: ", self.template_title
     
     def set_template_content(self, template_content):
@@ -61,16 +63,14 @@ class EmailSender:
             with open(template_content, 'r', encoding=self.encoding) as file:
                 self.template_content = file.read()
         else:
-            self.template_content = template_content
+            self.template_content = str(template_content)
         return "Template Content: ", self.template_content
 
     def set_match_dict(self, match_dict):
         self.set_match_dict = match_dict
 
     def add_suffix_address(self, _path):
-        if not (_path is None) and os.path.isfile(_path):
-            self.suffix_addresses.append(_path)
-            return _path
+        self.suffix_addresses += [_path]
 
     def send_with_content_replacement(self, 
                                       customer_email,
@@ -103,10 +103,11 @@ class EmailSender:
                 key = reverse_match_dict[placeholder]
                 if key in customer_info:
                     # Replace the placeholder with the corresponding value from customer_info
-                    template_content = template_content.replace(f'$${placeholder}$$', customer_info[key])
-                    template_title = template_title.replace(f'$${placeholder}$$', customer_info[key])
+                    template_content = template_content.replace(f'$${placeholder}$$', str(customer_info[key]))
+                    template_title = template_title.replace(f'$${placeholder}$$', str(customer_info[key]))
         
         print("template title: ", template_title)
+        print("Send to "+customer_email+": "+template_title)
         self.send_email(customer_emails=[customer_email], 
                         attachment_addresses=attachment_addresses,
                         template_title=template_title, 
